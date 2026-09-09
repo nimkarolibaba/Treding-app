@@ -1,10 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Trading App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIFTY Trading Analysis</title>
+<style>
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  background:#f4f6f8;
+  color:#111;
+}
+.header{
+  background:#111827;
+  color:white;
+  padding:22px;
+  text-align:center;
+}
+.header h1{margin:0;font-size:26px}
+.container{padding:18px}
+.card{
+  background:white;
+  border-radius:16px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 3px 12px #0002;
+}
+.price{
+  font-size:32px;
+  font-weight:bold;
+}
+.signal{
+  text-align:center;
+  font-size:24px;
+  font-weight:bold;
+  padding:15px;
+  border-radius:12px;
+  background:#e5e7eb;
+}
+button{
+  width:100%;
+  padding:15px;
+  border:0;
+  border-radius:12px;
+  background:#2563eb;
+  color:white;
+  font-size:18px;
+  font-weight:bold;
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid #eee;
+}
+.footer{
+  text-align:center;
+  color:#666;
+  font-size:12px;
+  padding:15px;
+}
+</style>
 </head>
+
 <body>
-  <h1>My Trading App</h1>
-  <p>Welcome to my trading analysis app.</p>
+
+<div class="header">
+  <h1>📈 NIFTY Trading App</h1>
+  <p>Intraday Market Analysis</p>
+</div>
+
+<div class="container">
+
+<div class="card">
+  <h2>NIFTY 50</h2>
+  <div class="price">LIVE DATA</div>
+  <p>Market Price</p>
+</div>
+
+<div class="card">
+  <h2>Trading Signal</h2>
+  <div class="signal">WAITING FOR ANALYSIS</div>
+</div>
+
+<div class="card">
+  <h2>Indicators</h2>
+  <div class="row"><span>EMA 5</span><b>--</b></div>
+  <div class="row"><span>VWAP</span><b>--</b></div>
+  <div class="row"><span>Supertrend</span><b>--</b></div>
+  <div class="row"><span>RSI</span><b>--</b></div>
+</div>
+
+<div class="card">
+  <h2>Market Analysis</h2>
+  <p>Click below to analyse NIFTY.</p>
+  <button onclick="analyse()">ANALYSE NIFTY</button>
+  <p id="result"></p>
+</div>
+
+</div>
+
+<div class="footer">
+  Trading decisions are user's responsibility.
+</div>
+
+<script>
+function analyse(){
+  document.getElementById("result").innerHTML =
+  "Analysis module ready. Angel One SmartAPI will be connected next.";
+}
+</script>
+
 </body>
 </html>
