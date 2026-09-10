@@ -1,45 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NIFTY Trading Analysis</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NIFTY Live Trading Reader</title>
+
 <style>
+*{box-sizing:border-box}
 body{
-  font-family:Arial,sans-serif;
   margin:0;
+  font-family:Arial,sans-serif;
   background:#f4f6f8;
   color:#111;
 }
 .header{
   background:#111827;
   color:white;
-  padding:22px;
+  padding:20px;
   text-align:center;
 }
-.header h1{margin:0;font-size:26px}
-.container{padding:18px}
+.header h1{margin:0;font-size:25px}
+.container{padding:15px;max-width:700px;margin:auto}
 .card{
   background:white;
-  border-radius:16px;
-  padding:18px;
-  margin-bottom:16px;
-  box-shadow:0 3px 12px #0002;
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:15px;
+  box-shadow:0 3px 12px #0001;
 }
 .price{
   font-size:32px;
   font-weight:bold;
-}
-.signal{
   text-align:center;
-  font-size:24px;
+}
+.change{text-align:center;margin:7px 0 15px}
+.status{
+  text-align:center;
+  font-size:25px;
   font-weight:bold;
   padding:15px;
   border-radius:12px;
-  background:#e5e7eb;
+  background:#f1f3f5;
 }
+.row{
+  display:flex;
+  justify-content:space-between;
+  padding:13px 0;
+  border-bottom:1px solid #eee;
+}
+.row:last-child{border-bottom:0}
+.label{font-weight:500}
+.value{font-weight:bold}
 button{
   width:100%;
-  padding:15px;
+  padding:17px;
   border:0;
   border-radius:12px;
   background:#2563eb;
@@ -47,17 +61,17 @@ button{
   font-size:18px;
   font-weight:bold;
 }
-.row{
-  display:flex;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom:1px solid #eee;
-}
-.footer{
+button:active{transform:scale(.98)}
+.small{
   text-align:center;
   color:#666;
-  font-size:12px;
-  padding:15px;
+  font-size:13px;
+  margin-top:12px;
+}
+.error{
+  color:#b91c1c;
+  text-align:center;
+  margin-top:10px;
 }
 </style>
 </head>
@@ -65,49 +79,364 @@ button{
 <body>
 
 <div class="header">
-  <h1>📈 NIFTY Trading App</h1>
-  <p>Intraday Market Analysis</p>
+  <h1>📊 NIFTY LIVE READER</h1>
 </div>
 
 <div class="container">
 
 <div class="card">
-  <h2>NIFTY 50</h2>
-  <div class="price">LIVE DATA</div>
-  <p>Market Price</p>
-</div>
-
-<div class="card">
-  <h2>Trading Signal</h2>
-  <div class="signal">WAITING FOR ANALYSIS</div>
+  <div class="price" id="price">--</div>
+  <div class="change" id="change">Waiting for market data...</div>
+  <div class="status" id="signal">WAIT</div>
 </div>
 
 <div class="card">
   <h2>Indicators</h2>
-  <div class="row"><span>EMA 5</span><b>--</b></div>
-  <div class="row"><span>VWAP</span><b>--</b></div>
-  <div class="row"><span>Supertrend</span><b>--</b></div>
-  <div class="row"><span>RSI</span><b>--</b></div>
+
+  <div class="row">
+    <span class="label">EMA 5</span>
+    <span class="value" id="ema5">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">EMA 10</span>
+    <span class="value" id="ema10">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">VWAP</span>
+    <span class="value" id="vwap">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Volume</span>
+    <span class="value" id="volume">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Price Action</span>
+    <span class="value" id="action">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Trend</span>
+    <span class="value" id="trend">--</span>
+  </div>
 </div>
 
 <div class="card">
-  <h2>Market Analysis</h2>
-  <p>Click below to analyse NIFTY.</p>
-  <button onclick="analyse()">ANALYSE NIFTY</button>
-  <p id="result"></p>
+  <h2>Trade Plan</h2>
+
+  <div class="row">
+    <span class="label">Entry</span>
+    <span class="value" id="entry">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Stop Loss</span>
+    <span class="value" id="sl">--</span>
+  </div>
+
+  <div class="row">
+    <span class="label">Target</span>
+    <span class="value" id="target">--</span>
+  </div>
 </div>
 
+<div class="card">
+  <button onclick="loadNifty()">ANALYSE NIFTY</button>
+  <div class="small" id="lastUpdate">
+    No data loaded
+  </div>
+  <div class="error" id="error"></div>
 </div>
 
-<div class="footer">
-  Trading decisions are user's responsibility.
+<div class="card">
+  <b>⚠️ Important</b>
+  <p>
+    This reader does not place orders automatically.
+    Always verify live market data before trading.
+  </p>
+</div>
+
 </div>
 
 <script>
-function analyse(){
-  document.getElementById("result").innerHTML =
-  "Analysis module ready. Angel One SmartAPI will be connected next.";
+
+const API =
+"https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=5m&range=1d";
+
+function fmt(n){
+  if(n === null || n === undefined || isNaN(n)) return "--";
+  return Number(n).toFixed(2);
 }
+
+function ema(values, period){
+  if(values.length < period) return null;
+
+  let k = 2/(period+1);
+  let e = values[0];
+
+  for(let i=1;i<values.length;i++){
+    e = values[i]*k + e*(1-k);
+  }
+
+  return e;
+}
+
+function calculateVWAP(candles){
+
+  let totalPV = 0;
+  let totalVol = 0;
+
+  for(const c of candles){
+
+    if(!c.volume || c.volume <= 0) continue;
+
+    const typical =
+      (c.high + c.low + c.close) / 3;
+
+    totalPV += typical * c.volume;
+    totalVol += c.volume;
+  }
+
+  if(totalVol === 0) return null;
+
+  return totalPV / totalVol;
+}
+
+function priceAction(candles){
+
+  if(candles.length < 2) return "--";
+
+  const a = candles[candles.length-2];
+  const b = candles[candles.length-1];
+
+  if(b.close > b.open && b.close > a.high)
+    return "Bullish Breakout";
+
+  if(b.close < b.open && b.close < a.low)
+    return "Bearish Breakdown";
+
+  if(b.close > b.open)
+    return "Bullish Candle";
+
+  if(b.close < b.open)
+    return "Bearish Candle";
+
+  return "Doji";
+}
+
+function setSignal(text){
+  document.getElementById("signal").textContent = text;
+}
+
+async function loadNifty(){
+
+  const errorBox = document.getElementById("error");
+  errorBox.textContent = "";
+
+  setSignal("LOADING...");
+
+  try{
+
+    const response = await fetch(API, {
+      cache:"no-store"
+    });
+
+    if(!response.ok)
+      throw new Error("Market data request failed");
+
+    const data = await response.json();
+
+    const result = data.chart.result?.[0];
+
+    if(!result)
+      throw new Error("NIFTY candle data unavailable");
+
+    const timestamps = result.timestamp || [];
+    const q = result.indicators.quote[0];
+
+    const candles = [];
+
+    for(let i=0;i<timestamps.length;i++){
+
+      if(
+        q.open[i] == null ||
+        q.high[i] == null ||
+        q.low[i] == null ||
+        q.close[i] == null
+      ) continue;
+
+      candles.push({
+        time:timestamps[i],
+        open:Number(q.open[i]),
+        high:Number(q.high[i]),
+        low:Number(q.low[i]),
+        close:Number(q.close[i]),
+        volume:Number(q.volume[i] || 0)
+      });
+    }
+
+    if(candles.length < 10)
+      throw new Error("Not enough candle data");
+
+    const closes = candles.map(c=>c.close);
+
+    const current =
+      candles[candles.length-1].close;
+
+    const previous =
+      candles.length > 1
+      ? candles[candles.length-2].close
+      : current;
+
+    const ema5 = ema(closes,5);
+    const ema10 = ema(closes,10);
+    const vwap = calculateVWAP(candles);
+
+    const pa = priceAction(candles);
+
+    const lastVolume =
+      candles[candles.length-1].volume;
+
+    const recentVolumes =
+      candles.slice(-11,-1)
+      .map(c=>c.volume)
+      .filter(v=>v>0);
+
+    const avgVolume =
+      recentVolumes.length
+      ? recentVolumes.reduce((a,b)=>a+b,0) /
+        recentVolumes.length
+      : 0;
+
+    let volumeText = fmt(lastVolume);
+
+    if(avgVolume > 0){
+      if(lastVolume > avgVolume*1.5)
+        volumeText += " HIGH";
+      else if(lastVolume < avgVolume*0.7)
+        volumeText += " LOW";
+      else
+        volumeText += " NORMAL";
+    }
+
+    let trend = "SIDEWAYS";
+
+    if(current > ema5 && ema5 > ema10)
+      trend = "BULLISH";
+
+    if(current < ema5 && ema5 < ema10)
+      trend = "BEARISH";
+
+    let signal = "WAIT";
+
+    const bullish =
+      current > ema5 &&
+      ema5 > ema10 &&
+      vwap !== null &&
+      current > vwap &&
+      pa !== "Bearish Breakdown";
+
+    const bearish =
+      current < ema5 &&
+      ema5 < ema10 &&
+      vwap !== null &&
+      current < vwap &&
+      pa !== "Bullish Breakout";
+
+    if(bullish)
+      signal = "🟢 BUY CONFIRMATION";
+
+    if(bearish)
+      signal = "🔴 SELL CONFIRMATION";
+
+    document.getElementById("price").textContent =
+      fmt(current);
+
+    const diff = current - previous;
+
+    document.getElementById("change").textContent =
+      (diff >= 0 ? "+" : "") +
+      fmt(diff) +
+      " from previous candle";
+
+    document.getElementById("ema5").textContent =
+      fmt(ema5);
+
+    document.getElementById("ema10").textContent =
+      fmt(ema10);
+
+    document.getElementById("vwap").textContent =
+      fmt(vwap);
+
+    document.getElementById("volume").textContent =
+      volumeText;
+
+    document.getElementById("action").textContent =
+      pa;
+
+    document.getElementById("trend").textContent =
+      trend;
+
+    setSignal(signal);
+
+    if(signal.includes("BUY")){
+
+      document.getElementById("entry").textContent =
+        fmt(current);
+
+      document.getElementById("sl").textContent =
+        fmt(current * 0.995);
+
+      document.getElementById("target").textContent =
+        fmt(current * 1.01);
+
+    }
+    else if(signal.includes("SELL")){
+
+      document.getElementById("entry").textContent =
+        fmt(current);
+
+      document.getElementById("sl").textContent =
+        fmt(current * 1.005);
+
+      document.getElementById("target").textContent =
+        fmt(current * 0.99);
+
+    }
+    else{
+
+      document.getElementById("entry").textContent="--";
+      document.getElementById("sl").textContent="--";
+      document.getElementById("target").textContent="--";
+
+    }
+
+    document.getElementById("lastUpdate").textContent =
+      "Updated: " + new Date().toLocaleTimeString();
+
+  }
+  catch(err){
+
+    setSignal("WAIT");
+
+    errorBox.textContent =
+      "CANDLE DATA ERROR: " + err.message;
+
+    document.getElementById("lastUpdate").textContent =
+      "No live candle data";
+
+  }
+}
+
+// Initial load
+loadNifty();
+
+// Refresh every 30 seconds
+setInterval(loadNifty,30000);
+
 </script>
 
 </body>
